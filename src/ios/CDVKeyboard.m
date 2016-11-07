@@ -59,6 +59,11 @@
         self.disableScrollingInShrinkView = [(NSNumber*)[self settingForKey:setting] boolValue];
     }
 
+    setting = @"DisableAnimationWhenKeyboardShowsOrHides";
+    if ([self settingForKey:setting]) {
+        self.disableAnimation = [(NSNumber*)[self settingForKey:setting] boolValue];
+    }
+
     NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
     __weak CDVKeyboard* weakSelf = self;
 
@@ -67,6 +72,9 @@
                                              queue:[NSOperationQueue mainQueue]
                                         usingBlock:^(NSNotification* notification) {
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnShow();"];
+            if (self.disableAnimation == NO) {
+                [UIView setAnimationsEnabled:YES];
+            }
                                         }];
     _keyboardHideObserver = [nc addObserverForName:UIKeyboardDidHideNotification
                                             object:nil
@@ -80,6 +88,9 @@
                                                  queue:[NSOperationQueue mainQueue]
                                             usingBlock:^(NSNotification* notification) {
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnShowing();"];
+            if (self.disableAnimation == YES) {
+                [UIView setAnimationsEnabled:NO];
+            }
             weakSelf.keyboardIsVisible = YES;
                                             }];
     _keyboardWillHideObserver = [nc addObserverForName:UIKeyboardWillHideNotification
@@ -237,6 +248,16 @@ static IMP WKOriginalImp;
     }
 
     self.disableScrollingInShrinkView = [value boolValue];
+}
+
+- (void)disableAnimation:(CDVInvokedUrlCommand*)command
+{
+    id value = [command.arguments objectAtIndex:0];
+    if (!([value isKindOfClass:[NSNumber class]])) {
+        value = [NSNumber numberWithBool:NO];
+    }
+
+    self.disableAnimation = [value boolValue];
 }
 
 - (void)hideFormAccessoryBar:(CDVInvokedUrlCommand*)command
